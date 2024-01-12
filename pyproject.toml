@@ -1,0 +1,31 @@
+[build-system]
+requires = ["flit_core >=3.2,<4"]
+build-backend = "flit_core.buildapi"
+
+[project]
+name = "onebitpc"
+authors = [
+    {name = "netcreator"}
+]
+readme = "README.md"
+license = {file = "LICENSE"}
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+requires-python = ">=3.7"
+dynamic = ["version", "description"]
+keywords = [
+    "simulaton",
+    "1-bit",
+    "cpu",
+]
+dependencies = []
+
+[project.urls]
+Home = "http://bitbucket.org/netcreator/logging_addons"
+Documentation = "http://bitbucket.org/netcreator/logging_addons/src/master/docs/README.md"
+
+[project.scripts]
+onebitpc = "onebitpc"
