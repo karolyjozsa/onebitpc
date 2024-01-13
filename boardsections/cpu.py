@@ -1,86 +1,63 @@
-"""CPU functions"""
+"""CPU section on the board
 
-from boardsections.hardware.leds import ProgCountLed, RegisterLed
-from boardsections.rom import Program
-from boardsections.hardware.u2_7474 import FlipFlop
-from boardsections.hardware.u3_7400 import nand
-from boardsections.hardware.u4_74153 import multiplexer
+- A 1-bit register containing memory (FlipFlop) and an LED
+- A 1-bit program counter (FlipFlop) and an LED
+- An XOR calculation section
+"""
+
+from PySide6 import QtCore
+
+from boardsections.hardware.u3_7400 import Nand
+from boardsections.hardware.u4_74153 import Multiplexer
+from boardsections.hardware.wiring import Wire
 from typedefinitions import TTL
 
 
-class Register(FlipFlop):
-    """The CPU register (internal memory)"""
-    def __init__(self, rom_program: Program) -> None:
-        self.rom_program = rom_program
-        self.register_led = RegisterLed()
-        super().__init__()  # this calls the output_changed()
-
-    def output_changed(self) -> None:
-        """Called when output changes on the Register flip-flop output"""
-        self.register_led.set_voltage(self.q_output.voltage())
-
-        new_register_value = data_processing(
-            rom_program=self.rom_program,
-            register=self.q_output
-        )
-        self.data = new_register_value
-        print(f'{new_register_value=}')
+class Alu:
+    """The Arithmetic Logic Unit in the CPU"""
+    def __init__(self) -> None:
+        self.mux = Multiplexer(Wire())
+        self.mux.data2(TTL.L)
+        self.mux.data3(TTL.L)
+        self.mux.enable_inv(TTL.L)
+        self.mux.select1(TTL.L)
 
 
-class ProgCounter(FlipFlop):
-    def __init__(self, rom_program: Program) -> None:
-        self.rom_program = rom_program
-        self.pc_led = ProgCountLed()
-        super().__init__()  # this calls the output_changed()
-
-    def output_changed(self) -> None:
-        """Called when output changes on the ProgCounter flip-flop output"""
-        self.rom_program.set_address(self.q_output)
-        self.pc_led.set_voltage(self.q_output.voltage())
-        
-        new_address_value = address_processing(
-            rom_program=self.rom_program,
-            progcounter_inv=self.q_inv_output
-        )
-        self.data = new_address_value
+class AddrPtr:
+    """The CPU program code address pointer"""
+    def __init__(self) -> None:
+        self.mux = Multiplexer(Wire())
+        self.mux.data2(TTL.L)
+        self.mux.data3(TTL.L)
+        self.mux.enable_inv(TTL.L)
+        self.mux.select1(TTL.L)
 
 
-def xor_block(inp1: TTL, inp2: TTL) -> TTL:
-    """The 4x NAND gates of the IC implement an XOR function"""
-    gate_a_out = nand(inp1, inp2)
-    gate_b_out = nand(inp1, gate_a_out)
-    gate_c_out = nand(gate_a_out, inp2)
-    gate_d_out = nand(gate_b_out, gate_c_out)
-    return gate_d_out
+class Xor(QtCore.QObject):
+    """An XOR logic by wired 4x NAND gates"""
+    def __init__(self, output: Wire) -> None:
+        self.in1_internal = Wire()
+        self.in2_internal = Wire()
+        self.nand1 = Nand(Wire())
+        self.nand2 = Nand(Wire())
+        self.nand3 = Nand(Wire())
+        nand4 = Nand(output)
+        self.output = output
 
+        # Internal wiring of NAND gates
+        self.in1_internal.solder_to(self.nand1.input1)
+        self.in1_internal.solder_to(self.nand2.input1)
+        self.in2_internal.solder_to(self.nand1.input2)
+        self.in2_internal.solder_to(self.nand3.input2)
+        self.nand1.output.solder_to(self.nand2.input2)
+        self.nand1.output.solder_to(self.nand3.input1)
+        self.nand2.output.solder_to(nand4.input1)
+        self.nand3.output.solder_to(nand4.input2)
 
-def data_processing(rom_program: Program, register: TTL) -> TTL:
-    """Execute a CPU instruction to calculate data"""
-    rom_code = rom_program.get_code()
-    xor_result = xor_block(register, rom_code[1])
-    print(f'{rom_code=}, {xor_result=}')
-    result_data = multiplexer(
-        data0=xor_result,
-        data1=register,
-        data2=TTL.L,
-        data3=TTL.L,
-        enable_inv=TTL.L,
-        select0=rom_code[0],
-        select1=TTL.L
-    )
-    return result_data
+    def input1(self, new_value: TTL):
+        """Slot: input1 changed"""
+        self.in1_internal.changes_to(new_value)
 
-
-def address_processing(rom_program: Program, progcounter_inv: TTL) -> TTL:
-    """Execute a CPU instruction to calculate program counter"""
-    rom_code = rom_program.get_code()
-    result_address = multiplexer(
-        data0=progcounter_inv,
-        data1=rom_code[1],
-        data2=TTL.L,
-        data3=TTL.L,
-        enable_inv=TTL.L,
-        select0=rom_code[0],
-        select1=TTL.L
-    )
-    return result_address
+    def input2(self, new_value: TTL):
+        """Slot: input2 changed"""
+        self.in2_internal.changes_to(new_value)

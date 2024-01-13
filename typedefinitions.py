@@ -1,16 +1,15 @@
 """Definitions"""
 
-import dataclasses
 from enum import Enum
 from typing import Literal, Self
 
 
-@dataclasses.dataclass
-class Bit:
-    value: Literal[0, 1]
+# @dataclasses.dataclass
+# class Bit:
+#     value: Literal[0, 1]
     
-    def ttl(self) -> "TTL":
-        return TTL(self.value)
+#     def ttl(self) -> "TTL":
+#         return TTL(self.value)
 
 
 class TTL(Enum):
@@ -29,5 +28,12 @@ class TTL(Enum):
     def voltage(self) -> float:
         return 0.3 + self.value*4.2
 
-    def bit(self) -> Bit:
-        return Bit(self.value)
+    # def bit(self) -> Bit:
+    #     return Bit(self.value)
+
+# class Voltage:
+#     def __init__(self, voltage: float) -> None:
+#         self.voltage = voltage
+
+#     def to_ttl(self):
+#         return TTL(1 if self.voltage>2.5 else 0)

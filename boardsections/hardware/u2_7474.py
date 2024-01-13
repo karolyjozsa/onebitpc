@@ -1,52 +1,67 @@
-"""Simulate the 7474 IC"""
+"""Simulate the 7474 dual flip-flop IC"""
 
+import logging
+
+from boardsections.hardware.wiring import Wire
 from typedefinitions import TTL
 
+
+PRESET_BIT_MASK = 0b10
+CLEAR_BIT_MASK = 0b01
+
+
 class FlipFlop:
-    def __init__(self) -> None:
-        self._clear_inv: TTL = TTL.H
-        self._preset_inv: TTL = TTL.H
-        self.data: TTL = TTL.L
-        self.set_output()
+    def __init__(self, output_q: Wire, output_q_inv: Wire) -> None:
+        self.data_value: TTL = TTL.L
+        self.state_bits: int = 1*PRESET_BIT_MASK + 1*CLEAR_BIT_MASK
+        self.output_q = output_q
+        self.output_q_inv = output_q_inv
 
-    def set_output(self) -> None:
-        if self._preset_inv==TTL.L and self._clear_inv==TTL.L:
-            self.q_output = TTL.H
-            self.q_inv_output = TTL.H
-            raise Warning("Active PRE and CLR at the same time is invalid")
-        self.q_output = self.data
-        self.q_inv_output = ~self.data
-        self.output_changed()
+    def data(self, new_value: TTL) -> None:
+        """Slot: data changed"""
+        self.data_value = new_value
 
-    @property
-    def clear_inv(self): pass
-    @clear_inv.setter
-    def clear_inv(self, clr_inv_value: TTL) -> None:
-        self._clear_inv = clr_inv_value
-        # HIGH->LOW change does the clear
-        if ~clr_inv_value:
-            self.data = TTL.L
-            self.set_output()
+    def clock(self, new_value: TTL) -> None:
+        """Slot: clock changed"""
+        # In normal mode, LOW->HIGH edge of clock changes output with data value
+        if self.state_bits == 3 and new_value == TTL.H:
+            self._output_changes()
 
-    @property
-    def preset_inv(self): pass
-    @preset_inv.setter
-    def preset_inv(self, pre_inv_value: TTL) -> None:
-        self._preset_inv = pre_inv_value
-        # HIGH->LOW change does the preset
-        if ~pre_inv_value:
-            self.data = TTL.H
-            self.set_output()
+    def preset_inv(self, new_value: TTL) -> None:
+        """Slot: preset changed"""
+        if self.state_bits&PRESET_BIT_MASK == new_value.value*PRESET_BIT_MASK:
+            return
+        # Flip the preset bit and keep the clear bit
+        self.state_bits = new_value.value*PRESET_BIT_MASK + self.state_bits&CLEAR_BIT_MASK
+        # Output changes if preset or clear is/are active now
+        if self.state_bits:
+            self._output_changes()
 
+    def clear_inv(self, new_value: TTL) -> None:
+        """Slot: clear changed"""
+        if self.state_bits&CLEAR_BIT_MASK == new_value.value*CLEAR_BIT_MASK:
+            return
+        # Flip the clear bit and keep the preset bit
+        self.state_bits = new_value.value*CLEAR_BIT_MASK + self.state_bits&PRESET_BIT_MASK
+        # Output changes if preset or clear is/are active now
+        if self.state_bits:
+            self._output_changes()
 
-    def output_changed(self) -> None:
-        """Called when output changes on the flip-flop output
-
-        This happens
-        - at init, to set the initial TTL levels in the CPU
-        - normally on the clock LOW->HIGH edge, to set the actual TTL levels
-        - at clear or preset (asyncronous from clock)
-        
-        Child classes must implement this method.
-        """
-        raise NotImplementedError
+    def _output_changes(self) -> None:
+        """Output needs to change"""
+        match self.state_bits:
+            case 3:  # normal
+                q = self.data_value
+                q_inv = ~self.data_value
+            case 2:  # clear
+                q = TTL.L
+                q_inv = TTL.H
+            case 1:  # preset
+                q = TTL.H
+                q_inv = TTL.L
+            case 0:  # invalid
+                q = TTL.H
+                q_inv = TTL.H
+                logging.warning("Active PRE and CLR at the same time is invalid")
+        self.output_q.changes_to(q)
+        self.output_q_inv.changes_to(q_inv)
