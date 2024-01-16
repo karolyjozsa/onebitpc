@@ -2,9 +2,12 @@
 
 from enum import Enum
 
-from boardsections.hardware.wiring import Wire
-from typedefinitions import TTL
+from PySide6 import QtCore
+
 from boardsections.hardware.dipswitches import DipSwitch, dip_switch_array
+from boardsections.hardware.wiring import Wire
+from tools.wiring_checker import hw_elem, input
+from typedefinitions import TTL
 
 
 class InstrunctionMnemonic(Enum):
@@ -14,6 +17,7 @@ class InstrunctionMnemonic(Enum):
              # by the instruction data. The register does not change.
 
 
+@hw_elem
 class Rom:
     """The program code "burnt" into the ROM
     
@@ -22,22 +26,19 @@ class Rom:
     - can burn code content (simulating setting dip switches)
     - can provide verbose code
     """
-    program_counter0: TTL
-
-    def __init__(self, output_data: Wire, output_address: Wire) -> None:
+    def __init__(self) -> None:
         self.address_value: TTL = TTL.L
-        self.output_data = output_data
-        self.output_address = output_address
+        self.output_data = Wire("rom_out_data")
+        self.output_address = Wire("rom_out_address")
     
+    @input
+    @QtCore.Slot(TTL)
     def address(self, new_value: TTL) -> None:
         """Slot: address changed"""
-        if self.address_value == new_value:
-            return
-
         self.address_value = new_value
         dipswitch: DipSwitch = dip_switch_array[new_value.value]
-        self.output_data.changes_to(TTL(dipswitch.switch_one))
-        self.output_address.changes_to(TTL(dipswitch.switch_two))
+        self.output_address.set_output_level(TTL(dipswitch.switch_one))
+        self.output_data.set_output_level(TTL(dipswitch.switch_two))
 
     @staticmethod
     def programming(new_codes: list[DipSwitch]) -> None:

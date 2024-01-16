@@ -1,5 +1,9 @@
 """The 1-bit computer simulation
 
+The physical board contains ICs and other HW elements. This code aims to
+simulate these HW elements and their connection (wiring).
+
+Atomic elements are collected into logical blocks.
 Create and connect the board sections, i.e. HW elements or logical blocks:
 
 - ROM
@@ -17,10 +21,10 @@ import asyncio
 from boardsections.clock import AstableMultivibrator
 from boardsections.cpu import Alu, AddrPtr, Xor
 from boardsections.hardware.dipswitches import DipSwitch
-from boardsections.hardware.leds import ClockLed, ProgCountLed, RegisterLed
+from boardsections.hardware.leds import Led
 from boardsections.hardware.u2_7474 import FlipFlop
-from boardsections.hardware.wiring import Wire
 from boardsections.rom import Rom
+from tools import wiring_checker
 
 
 ####################################
@@ -31,21 +35,20 @@ from boardsections.rom import Rom
 # ??????
 
 # LEDs
-register_led = RegisterLed()
-pc_led = ProgCountLed()
-clock_led = ClockLed()
+register_led = Led('Reg', 'red')
+pc_led = Led('PC', 'yellow')
+clock_led = Led('Clock', 'blue')
 
 # Complex sections
-clock = AstableMultivibrator(Wire())
-rom = Rom(Wire(), Wire())
-register = FlipFlop(Wire(), Wire())
-prog_cnt = FlipFlop(Wire(), Wire())
+clock = AstableMultivibrator()
+rom = Rom()
+register = FlipFlop("register")
+prog_cnt = FlipFlop("prog_cnt")
 
 # Create calculating sections
-xor = Xor(Wire())
+xor = Xor()
 alu = Alu()
 addr_ptr = AddrPtr()
-
 
 ####################################
 ## Solder outputs to other elements
@@ -83,8 +86,13 @@ addr_ptr.mux.output.solder_to(prog_cnt.data)
 
 
 ####################################
-## Set the program code
+## Prepare execution
 ####################################
+
+# Check that all inputs are connected
+# wiring_checker.check()
+
+# Set the program code
 rom.programming([
     DipSwitch(0, 0),  # XOR 0
     DipSwitch(0, 1),  # XOR 1

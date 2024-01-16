@@ -13,18 +13,28 @@ change emit their signals, and so on.
 """
 
 from collections.abc import Callable
-from PySide6 import QtCore
+import logging
+from PySide6.QtCore import QObject, Signal
 
+from tools import wiring_checker
 from typedefinitions import TTL
 
 
-class Wire(QtCore.QObject):
+class Wire(QObject):
     """A wire from an output to input(s)"""
-    level_changed = QtCore.Signal((TTL,))
+    level_changed = Signal((TTL,))
+
+    def __init__(self, name: str) -> None:
+        super().__init__(None)
+        self.name = name
+        self.current_ttl = TTL.L
 
     def solder_to(self, input: Callable[[TTL], None]) -> None:
         """Connec an output to an input"""
+        wiring_checker.input_connected(input)
         self.level_changed.connect(input)
 
-    def changes_to(self, new_value: TTL) -> None:
-        self.level_changed.emit(new_value)
+    def set_output_level(self, new_value: TTL) -> None:
+        if self.current_ttl != new_value:
+            self.current_ttl = new_value
+            self.level_changed.emit(new_value)

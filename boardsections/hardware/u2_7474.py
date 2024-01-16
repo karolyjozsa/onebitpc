@@ -2,7 +2,10 @@
 
 import logging
 
+from PySide6 import QtCore
+
 from boardsections.hardware.wiring import Wire
+from tools.wiring_checker import hw_elem, input
 from typedefinitions import TTL
 
 
@@ -10,25 +13,29 @@ PRESET_BIT_MASK = 0b10
 CLEAR_BIT_MASK = 0b01
 
 
+@hw_elem
 class FlipFlop:
-    def __init__(self, output_q: Wire, output_q_inv: Wire) -> None:
+    def __init__(self, name: str) -> None:
         self.data_value: TTL = TTL.L
         self.state_bits: int = 1*PRESET_BIT_MASK + 1*CLEAR_BIT_MASK
-        self.output_q = output_q
-        self.output_q_inv = output_q_inv
+        self.output_q = Wire(f"{name}_q")
+        self.output_q_inv = Wire(f"{name}_q_inv")
 
+    @input
+    @QtCore.Slot(TTL)
     def data(self, new_value: TTL) -> None:
-        """Slot: data changed"""
         self.data_value = new_value
 
+    @input
+    @QtCore.Slot(TTL)
     def clock(self, new_value: TTL) -> None:
-        """Slot: clock changed"""
         # In normal mode, LOW->HIGH edge of clock changes output with data value
         if self.state_bits == 3 and new_value == TTL.H:
             self._output_changes()
 
+    @input
+    @QtCore.Slot(TTL)
     def preset_inv(self, new_value: TTL) -> None:
-        """Slot: preset changed"""
         if self.state_bits&PRESET_BIT_MASK == new_value.value*PRESET_BIT_MASK:
             return
         # Flip the preset bit and keep the clear bit
@@ -37,8 +44,9 @@ class FlipFlop:
         if self.state_bits:
             self._output_changes()
 
+    @input
+    @QtCore.Slot(TTL)
     def clear_inv(self, new_value: TTL) -> None:
-        """Slot: clear changed"""
         if self.state_bits&CLEAR_BIT_MASK == new_value.value*CLEAR_BIT_MASK:
             return
         # Flip the clear bit and keep the preset bit
@@ -63,5 +71,5 @@ class FlipFlop:
                 q = TTL.H
                 q_inv = TTL.H
                 logging.warning("Active PRE and CLR at the same time is invalid")
-        self.output_q.changes_to(q)
-        self.output_q_inv.changes_to(q_inv)
+        self.output_q.set_output_level(q)
+        self.output_q_inv.set_output_level(q_inv)
