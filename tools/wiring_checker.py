@@ -22,6 +22,11 @@ After all HW element definitions and connections are done, the check() verifies
 that all inputs are connected.
 """
 from collections.abc import Callable
+from typing import Generic, TypeVar
+
+
+T_HW_ELEM = TypeVar("T_HW_ELEM")
+T_INPUT = TypeVar("T_INPUT", bound=Callable)
 
 # Collect methods decorated with @input of classes decorated with @hw_elem
 _inputs_by_classes: dict[str, list[str]] = {}
@@ -33,7 +38,7 @@ _inputs_found_in_hwelem: list[str] = []
 _inputs_connected: dict[str, bool] = {}
 
 
-def hw_elem(klass: type):
+def hw_elem(klass: Generic[T_HW_ELEM]) -> T_HW_ELEM:
     """Decorator for a HW element class
     
     When this is called input decorators have already run and inputs_by_classes
@@ -56,15 +61,15 @@ def hw_elem(klass: type):
     klass.__init__ = init
     return klass
 
-def input(fn: Callable):
+def input(fn: Generic[T_INPUT]) -> T_INPUT:
     """Decorator for input
 
     This decorator runs while the class is still being parsed, i.e. the class
     itself does not exist yet.
 
     Get the fully qualified name (module, parent classes) of the class,
-    containing the input function. This is key of the inputs_by_classes dict
-    and it will store the names of the @input method names in this class.
+    containing the input function. This is the key of the inputs_by_classes
+    dict and it will store the names of the @input method names in this class.
 
     If this is not a method of a class, store it in inputs_connected with the
     key being the repr() of the method, so that it is unique in all instances
@@ -90,7 +95,7 @@ def _register_input_fn(fn: Callable) -> None:
         raise SystemError(f"{fn_repr} input already exists")
     _inputs_connected[fn_repr] = False
 
-def input_connected(fn: Callable):
+def input_connected(fn: Callable) -> None:
     """Mark the (registered) input as connected"""
     fn_repr = repr(fn)
     if fn_repr not in _inputs_connected:
@@ -99,7 +104,7 @@ def input_connected(fn: Callable):
         raise SystemError(f"{fn_repr} @input already connected to an output")
     _inputs_connected[fn_repr] = True
 
-def check():
+def check() -> None:
     """Check that inputs are functions or correct class members, and all connected"""
     all_input_fn = [qc+"."+fn for qc, fnlist in _inputs_by_classes.items() for fn in fnlist]
     input_fn_outside_hwelem = set(all_input_fn) - set(_inputs_found_in_hwelem)
