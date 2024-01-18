@@ -9,6 +9,7 @@ from PySide6 import QtCore
 
 from boardsections.hardware.u3_7400 import Nand
 from boardsections.hardware.u4_74153 import Multiplexer
+from boardsections.hardware.wiring import FixedWire, Wire
 from tools.wiring_checker import hw_elem, input
 from typedefinitions import TTL
 
@@ -17,20 +18,20 @@ class Alu:
     """The Arithmetic Logic Unit in the CPU"""
     def __init__(self) -> None:
         self.mux = Multiplexer("alu")
-        self.mux.data2(TTL.L)
-        self.mux.data3(TTL.L)
-        self.mux.enable_inv(TTL.L)
-        self.mux.select1(TTL.L)
+        FixedWire(TTL.L).output.solder_to(self.mux.data2)
+        FixedWire(TTL.L).output.solder_to(self.mux.data3)
+        FixedWire(TTL.L).output.solder_to(self.mux.enable_inv)
+        FixedWire(TTL.L).output.solder_to(self.mux.select1)
 
 
 class AddrPtr:
     """The CPU program code address pointer"""
     def __init__(self) -> None:
         self.mux = Multiplexer("addrptr")
-        self.mux.data2(TTL.L)
-        self.mux.data3(TTL.L)
-        self.mux.enable_inv(TTL.L)
-        self.mux.select1(TTL.L)
+        FixedWire(TTL.L).output.solder_to(self.mux.data2)
+        FixedWire(TTL.L).output.solder_to(self.mux.data3)
+        FixedWire(TTL.L).output.solder_to(self.mux.enable_inv)
+        FixedWire(TTL.L).output.solder_to(self.mux.select1)
 
 
 @hw_elem
@@ -49,14 +50,20 @@ class Xor():
         self.nand2.output.solder_to(self.nand4.input1)
         self.nand3.output.solder_to(self.nand4.input2)
 
+        # Virtual wiring of the XOR inputs to the NAND gates
+        self.input1_emitter = Wire("xor_input1_emitter")
+        self.input2_emitter = Wire("xor_input2_emitter")
+        self.input1_emitter.solder_to(self.nand1.input1)
+        self.input1_emitter.solder_to(self.nand2.input1)
+        self.input2_emitter.solder_to(self.nand1.input2)
+        self.input2_emitter.solder_to(self.nand3.input2)
+
     @input
     @QtCore.Slot(TTL)
     def input1(self, new_value: TTL):
-        self.nand1.input1(new_value)
-        self.nand2.input1(new_value)
+        self.input1_emitter.set_output_level(new_value)
 
     @input
     @QtCore.Slot(TTL)
     def input2(self, new_value: TTL):
-        self.nand1.input2(new_value)
-        self.nand3.input2(new_value)
+        self.input2_emitter.set_output_level(new_value)

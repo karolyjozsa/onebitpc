@@ -21,25 +21,21 @@ class Multiplexer:
     @input
     @QtCore.Slot(TTL)
     def data0(self, new_value: TTL) -> None:
-        """Slot: data0 changed"""
         self._data(0, new_value)
 
     @input
     @QtCore.Slot(TTL)
     def data1(self, new_value: TTL) -> None:
-        """Slot: data1 changed"""
         self._data(1, new_value)
 
     @input
     @QtCore.Slot(TTL)
     def data2(self, new_value: TTL) -> None:
-        """Slot: data2 changed"""
         self._data(2, new_value)
 
     @input
     @QtCore.Slot(TTL)
     def data3(self, new_value: TTL) -> None:
-        """Slot: data3 changed"""
         self._data(3, new_value)
     
     def _data(self, idx, new_value) -> None:
@@ -50,13 +46,11 @@ class Multiplexer:
     @input
     @QtCore.Slot(TTL)
     def select0(self, new_value: TTL) -> None:
-        """Slot: select0 changed"""
         self._select(0, new_value)
 
     @input
     @QtCore.Slot(TTL)
     def select1(self, new_value: TTL) -> None:
-        """Slot: select1 changed"""
         self._select(1, new_value)
     
     def _select(self, select_bit, new_value) -> None:
@@ -70,7 +64,6 @@ class Multiplexer:
     @input
     @QtCore.Slot(TTL)
     def enable_inv(self, new_value) -> None:
-        """Slot: enable_inv changed"""
         self.enable_inv_value = new_value
         # Output only changes if the actual data is HIGH
         if self.data_values[self.select] == TTL.H:
