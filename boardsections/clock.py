@@ -19,6 +19,8 @@ class AstableMultivibrator:
     async def run(self):
         while True:
             self.output.set_output_level(self.clock_level)
+            if self.clock_level == TTL.L:
+                print("-----------------")  # clock cycle separator
             await asyncio.sleep(1.0)
             self.clock_level = ~self.clock_level
             # TODO: use analogue simulation with SchmidtTrigger gates

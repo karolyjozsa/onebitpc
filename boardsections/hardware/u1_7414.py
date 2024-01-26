@@ -2,6 +2,7 @@
 
 from PySide6 import QtCore
 
+from boardsections.hardware.psu import Vcc
 from boardsections.hardware.wiring import Wire
 from tools.wiring_checker import hw_elem, input
 from typedefinitions import TTL
@@ -14,8 +15,15 @@ THRESHOLD_LOW = 0.6
 @hw_elem
 class SchmidtTrigger:
     def __init__(self, name: str) -> None:
+        self.powered = False
+        Vcc().solder_to(self.vcc)
         self.output_value: TTL = TTL.L
         self.output = Wire(f"{name}_out")
+
+    @input
+    @QtCore.Slot(TTL)
+    def vcc(self, power: TTL) -> None:
+        self.powered = power == TTL.H
     
     @input
     @QtCore.Slot(TTL)
@@ -26,8 +34,10 @@ class SchmidtTrigger:
 
         if new_value > THRESHOLD_HIGH and self.output_value == TTL.L:
             self.output_value = TTL.H
-            self.output.set_output_level(self.output_value)
+            if self.powered:
+                self.output.set_output_level(self.output_value)
 
         if new_value < THRESHOLD_LOW and self.output_value == TTL.H:
             self.output_value = TTL.L
-            self.output.set_output_level(self.output_value)
+            if self.powered:
+                self.output.set_output_level(self.output_value)

@@ -34,7 +34,6 @@ class Rom:
     @input
     @QtCore.Slot(TTL)
     def address(self, new_value: TTL) -> None:
-        """Slot: address changed"""
         self.address_value = new_value
         dipswitch: DipSwitch = dip_switch_array[new_value.value]
         self.output_address.set_output_level(TTL(dipswitch.switch_one))

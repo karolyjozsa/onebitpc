@@ -2,6 +2,7 @@
 
 from PySide6 import QtCore
 
+from boardsections.hardware.psu import Vcc
 from boardsections.hardware.wiring import Wire
 from tools.wiring_checker import hw_elem, input
 from typedefinitions import TTL
@@ -13,10 +14,17 @@ SELECT_BIT_MASK = [0b01, 0b10]
 @hw_elem
 class Multiplexer:
     def __init__(self, name: str) -> None:
+        self.powered = False
+        Vcc().solder_to(self.vcc)
         self.data_values: list[TTL] = [TTL.L for _ in range(4)]
         self.enable_inv_value: TTL = TTL.L
         self.select: int = 0*SELECT_BIT_MASK[0] + 0*SELECT_BIT_MASK[1]
         self.output = Wire(f"{name}_out")
+
+    @input
+    @QtCore.Slot(TTL)
+    def vcc(self, power: TTL) -> None:
+        self.powered = power == TTL.H
 
     @input
     @QtCore.Slot(TTL)
@@ -41,7 +49,8 @@ class Multiplexer:
     def _data(self, idx, new_value) -> None:
         self.data_values[idx] = new_value
         if ~self.enable_inv_value and self.select == idx:
-            self.output.set_output_level(new_value)
+            if self.powered:
+                self.output.set_output_level(new_value)
 
     @input
     @QtCore.Slot(TTL)
@@ -59,7 +68,8 @@ class Multiplexer:
             self.select&SELECT_BIT_MASK[~select_bit]
         )
         if ~self.enable_inv_value:
-            self.output.set_output_level(self.data_values[self.select])
+            if self.powered:
+                self.output.set_output_level(self.data_values[self.select])
 
     @input
     @QtCore.Slot(TTL)
@@ -69,6 +79,8 @@ class Multiplexer:
         if self.data_values[self.select] == TTL.H:
             # Enabling data out?
             if new_value == TTL.L:
-                self.output.set_output_level(self.data_values[self.select])
+                if self.powered:
+                    self.output.set_output_level(self.data_values[self.select])
             else:
-                self.output.set_output_level(TTL.L)
+                if self.powered:
+                    self.output.set_output_level(TTL.L)

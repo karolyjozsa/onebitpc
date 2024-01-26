@@ -38,22 +38,3 @@ class Wire(QObject):
         if self.current_ttl != new_value:
             self.current_ttl = new_value
             self.level_changed.emit(new_value)
-
-
-class FixedWire:
-    """Special HW element, i.e. fix wiring to ground or Vcc
-    
-    When an input is soldered to the ground, it automatically sent a signal
-    with LOW. Vcc sends a signal with HIGH.
-    """
-    def __init__(self, fixlevel: TTL) -> None:
-        self.output = Wire(str(fixlevel))
-        self.fixlevel = fixlevel
-        # Store the original solder_to()
-        self.wire_solder_to_input = self.output.solder_to
-        self.output.solder_to = self.ground_soldered_to_input
-    
-    def ground_soldered_to_input(self, input: Callable[[TTL], None]) -> None:
-        """This replaces the original solder_to() to also sends signal"""
-        self.wire_solder_to_input(input)
-        self.output.set_output_level(self.fixlevel)

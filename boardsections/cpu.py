@@ -7,9 +7,10 @@
 
 from PySide6 import QtCore
 
+from boardsections.hardware.psu import Ground
 from boardsections.hardware.u3_7400 import Nand
 from boardsections.hardware.u4_74153 import Multiplexer
-from boardsections.hardware.wiring import FixedWire, Wire
+from boardsections.hardware.wiring import Wire
 from tools.wiring_checker import hw_elem, input
 from typedefinitions import TTL
 
@@ -18,20 +19,20 @@ class Alu:
     """The Arithmetic Logic Unit in the CPU"""
     def __init__(self) -> None:
         self.mux = Multiplexer("alu")
-        FixedWire(TTL.L).output.solder_to(self.mux.data2)
-        FixedWire(TTL.L).output.solder_to(self.mux.data3)
-        FixedWire(TTL.L).output.solder_to(self.mux.enable_inv)
-        FixedWire(TTL.L).output.solder_to(self.mux.select1)
+        Ground().solder_to(self.mux.data2)
+        Ground().solder_to(self.mux.data3)
+        Ground().solder_to(self.mux.enable_inv)
+        Ground().solder_to(self.mux.select1)
 
 
 class AddrPtr:
     """The CPU program code address pointer"""
     def __init__(self) -> None:
         self.mux = Multiplexer("addrptr")
-        FixedWire(TTL.L).output.solder_to(self.mux.data2)
-        FixedWire(TTL.L).output.solder_to(self.mux.data3)
-        FixedWire(TTL.L).output.solder_to(self.mux.enable_inv)
-        FixedWire(TTL.L).output.solder_to(self.mux.select1)
+        Ground().solder_to(self.mux.data2)
+        Ground().solder_to(self.mux.data3)
+        Ground().solder_to(self.mux.enable_inv)
+        Ground().solder_to(self.mux.select1)
 
 
 @hw_elem

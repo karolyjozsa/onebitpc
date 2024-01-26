@@ -4,6 +4,7 @@ import logging
 
 from PySide6 import QtCore
 
+from boardsections.hardware.psu import Vcc
 from boardsections.hardware.wiring import Wire
 from tools.wiring_checker import hw_elem, input
 from typedefinitions import TTL
@@ -16,10 +17,17 @@ CLEAR_BIT_MASK = 0b01
 @hw_elem
 class FlipFlop:
     def __init__(self, name: str) -> None:
+        self.powered = False
+        Vcc().solder_to(self.vcc)
         self.data_value: TTL = TTL.L
-        self.state_bits: int = 1*PRESET_BIT_MASK + 1*CLEAR_BIT_MASK
+        self.state_bits: int = 0  # actually undefined, but PRE/CLR=High is coming
         self.output_q = Wire(f"{name}_q")
         self.output_q_inv = Wire(f"{name}_q_inv")
+
+    @input
+    @QtCore.Slot(TTL)
+    def vcc(self, power: TTL) -> None:
+        self.powered = power == TTL.H
 
     @input
     @QtCore.Slot(TTL)
@@ -71,5 +79,6 @@ class FlipFlop:
                 q = TTL.H
                 q_inv = TTL.H
                 logging.warning("Active PRE and CLR at the same time is invalid")
-        self.output_q.set_output_level(q)
-        self.output_q_inv.set_output_level(q_inv)
+        if self.powered:
+            self.output_q.set_output_level(q)
+            self.output_q_inv.set_output_level(q_inv)

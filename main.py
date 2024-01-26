@@ -23,7 +23,7 @@ from boardsections.cpu import Alu, AddrPtr, Xor
 from boardsections.hardware.dipswitches import DipSwitch
 from boardsections.hardware.leds import Led
 from boardsections.hardware.u2_7474 import FlipFlop
-from boardsections.hardware.wiring import FixedWire
+from boardsections.hardware.psu import Vcc
 from boardsections.rom import Rom
 from tools import wiring_checker
 from typedefinitions import TTL
@@ -45,11 +45,11 @@ clock_led = Led('Clock', 'blue')
 clock = AstableMultivibrator()
 rom = Rom()
 register = FlipFlop("register")
-FixedWire(TTL.H).output.solder_to(register.preset_inv)
-FixedWire(TTL.H).output.solder_to(register.clear_inv)
+Vcc().solder_to(register.preset_inv)
+Vcc().solder_to(register.clear_inv)
 prog_cnt = FlipFlop("prog_cnt")
-FixedWire(TTL.H).output.solder_to(prog_cnt.preset_inv)
-FixedWire(TTL.H).output.solder_to(prog_cnt.clear_inv)
+Vcc().solder_to(prog_cnt.preset_inv)
+Vcc().solder_to(prog_cnt.clear_inv)
 
 # Create calculating sections
 xor = Xor()
