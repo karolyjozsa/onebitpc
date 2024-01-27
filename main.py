@@ -20,9 +20,9 @@ import asyncio
 
 from boardsections.clock import AstableMultivibrator
 from boardsections.cpu import Alu, PrgCnt, PrgCntCalc, Register, Xor
-from boardsections.hardware.psu import VCC
 from boardsections.hardware.dipswitches import DipSwitch
 from boardsections.hardware.leds import Led
+from boardsections.hardware.psu import PSU
 from boardsections.rom import Rom
 from tools import wiring_checker
 
@@ -36,7 +36,8 @@ from tools import wiring_checker
 
 # LEDs
 power_led = Led('Pwr', 'white')
-VCC.solder_to(power_led.anode)
+PSU.vcc.solder_to(power_led.anode)
+PSU.ground.solder_to(power_led.catode)
 register_led = Led('Reg', 'red')
 pc_led = Led('PC', 'yellow')
 clock_led = Led('Clock', 'blue')
@@ -60,16 +61,19 @@ rom = Rom()
 clock.output.solder_to(register.clock)
 clock.output.solder_to(prog_cnt.clock)
 clock.output.solder_to(clock_led.anode)
+PSU.ground.solder_to(clock_led.catode)
 
 # Register to XOR, ALU and LED
 register.output_q.solder_to(xor.input1)
 register.output_q.solder_to(alu.mux.data1)
 register.output_q.solder_to(register_led.anode)
+PSU.ground.solder_to(register_led.catode)
 
 # Program Counter to ROM, Addres Pointer and LED
 prog_cnt.output_q.solder_to(rom.address)
 prog_cnt.output_q_inv.solder_to(prog_cnt_calc.mux.data0)
 prog_cnt.output_q.solder_to(pc_led.anode)
+PSU.ground.solder_to(pc_led.catode)
 
 # ROM to arithmetic and addressing sections
 rom.output_data.solder_to(xor.input2)
@@ -103,4 +107,5 @@ rom.programming([
 ####################################
 ## Run the simulation
 ####################################
+PSU.power_switch(on=True)
 asyncio.run(clock.run())

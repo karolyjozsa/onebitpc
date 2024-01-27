@@ -35,6 +35,7 @@ class Wire(QObject):
         self.level_changed.connect(input)
 
     def set_output_level(self, new_value: TTL) -> None:
+        logging.info(f"{self.name} -> {new_value} while {self.current_ttl=}")
         if self.current_ttl != new_value:
             self.current_ttl = new_value
             self.level_changed.emit(new_value)

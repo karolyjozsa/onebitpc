@@ -11,7 +11,7 @@ The sections inside the CPU usually are
 
 from PySide6 import QtCore
 
-from boardsections.hardware.psu import GROUND, VCC
+from boardsections.hardware.psu import PSU
 from boardsections.hardware.u2_7474 import FlipFlop
 from boardsections.hardware.u3_7400 import Nand
 from boardsections.hardware.u4_74153 import Multiplexer
@@ -24,36 +24,36 @@ class Register(FlipFlop):
     """CPU internal memory/register"""
     def __init__(self) -> None:
         super().__init__("register")
-        VCC.solder_to(self.preset_inv)
-        VCC.solder_to(self.clear_inv)
+        PSU.vcc.solder_to(self.preset_inv)
+        PSU.vcc.solder_to(self.clear_inv)
 
 
 class PrgCnt(FlipFlop):
     """CPU program counter store"""
     def __init__(self) -> None:
         super().__init__("prog_cnt")
-        VCC.solder_to(self.preset_inv)
-        VCC.solder_to(self.clear_inv)
+        PSU.vcc.solder_to(self.preset_inv)
+        PSU.vcc.solder_to(self.clear_inv)
 
 
 class Alu:
     """The Arithmetic Logic Unit"""
     def __init__(self) -> None:
         self.mux = Multiplexer("alu")
-        GROUND.solder_to(self.mux.data2)
-        GROUND.solder_to(self.mux.data3)
-        GROUND.solder_to(self.mux.enable_inv)
-        GROUND.solder_to(self.mux.select1)
+        PSU.ground.solder_to(self.mux.data2)
+        PSU.ground.solder_to(self.mux.data3)
+        PSU.ground.solder_to(self.mux.enable_inv)
+        PSU.ground.solder_to(self.mux.select1)
 
 
 class PrgCntCalc:
     """The program code address pointer calculator"""
     def __init__(self) -> None:
         self.mux = Multiplexer("prog_cnt_calc")
-        GROUND.solder_to(self.mux.data2)
-        GROUND.solder_to(self.mux.data3)
-        GROUND.solder_to(self.mux.enable_inv)
-        GROUND.solder_to(self.mux.select1)
+        PSU.ground.solder_to(self.mux.data2)
+        PSU.ground.solder_to(self.mux.data3)
+        PSU.ground.solder_to(self.mux.enable_inv)
+        PSU.ground.solder_to(self.mux.select1)
 
 
 @hw_elem

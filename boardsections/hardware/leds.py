@@ -14,10 +14,15 @@ class Led:
         self.voltage: float = 0.2
 
     def _display(self) -> None:
-        print(f'{self.name} LED is {"ON" if self.voltage > 4.2 else "OFF"}')
+        print(f'{self.name} LED {"ON" if self.voltage > 4.2 else "OFF"}')
 
     @input
     @QtCore.Slot(TTL)
     def anode(self, input: TTL) -> None:
         self.voltage = input.voltage()
         self._display()
+
+    @input
+    @QtCore.Slot(TTL)
+    def catode(self, input: TTL) -> None:
+        pass

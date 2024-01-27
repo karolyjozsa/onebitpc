@@ -6,11 +6,25 @@ they do not emit voltage change signals, when not powered.
 """
 
 from collections.abc import Callable
+import logging
 
 from PySide6 import QtCore
 
 from boardsections.hardware.wiring import Wire
 from typedefinitions import TTL
+
+
+class Psu:
+    def __init__(self) -> None:
+        self.ground = Ground()
+        self.vcc = Vcc()
+    
+    @QtCore.Slot(bool)
+    def power_switch(self, on: bool) -> None:
+        """Switch the PSU on or off"""
+        self.ground.output.set_output_level(TTL.L)
+        self.vcc.output.set_output_level(TTL.H if on else TTL.L)
+        logging.info(f"Board powered {'on' if on else 'off'}")
 
 
 class Ground:
@@ -25,7 +39,7 @@ class Ground:
     def solder_to(self, input: Callable[[TTL], None]) -> None:
         """Solder ground to the input"""
         self.output.solder_to(input)
-        self.output.set_output_level(TTL.L)
+        logging.debug(f"Ground soldered to {input}")
 
 
 class Vcc:
@@ -41,13 +55,7 @@ class Vcc:
     def solder_to(self, input: Callable[[TTL], None]) -> None:
         """Solder Vcc to the input"""
         self.output.solder_to(input)
-        self.power_switch(on=True)
-    
-    @QtCore.Slot(bool)
-    def power_switch(self, on: bool) -> None:
-        """Switch the PSU on or off"""
-        self.output.set_output_level(TTL.H if on else TTL.L)
+        logging.debug(f"Vcc soldered to {input}")
 
 
-GROUND = Ground()
-VCC = Vcc()
+PSU = Psu()

@@ -1,8 +1,10 @@
 """Simulate the 74153 dual 4-to-1 multiplexer IC"""
 
+import logging
+
 from PySide6 import QtCore
 
-from boardsections.hardware.psu import VCC
+from boardsections.hardware.psu import PSU
 from boardsections.hardware.wiring import Wire
 from tools.wiring_checker import hw_elem, input
 from typedefinitions import TTL
@@ -13,19 +15,23 @@ SELECT_BIT_MASK = [0b01, 0b10]
 
 @hw_elem
 class Multiplexer:
-    powered: bool
+    powered: bool = False
 
     def __init__(self, name: str) -> None:
-        VCC.solder_to(self.vcc)
+        PSU.vcc.solder_to(self.vcc)
+        self.name = name
         self.data_values: list[TTL] = [TTL.L for _ in range(4)]
         self.enable_inv_value: TTL = TTL.L
         self.select: int = 0*SELECT_BIT_MASK[0] + 0*SELECT_BIT_MASK[1]
         self.output = Wire(f"{name}_out")
+        self.output_value: TTL = TTL.L
 
     @input
     @QtCore.Slot(TTL)
     def vcc(self, power: TTL) -> None:
         self.powered = power == TTL.H
+        logging.info(f"{self.name} {self.powered=}")
+        self._output_changes()
 
     @input
     @QtCore.Slot(TTL)
@@ -50,8 +56,8 @@ class Multiplexer:
     def _data(self, idx, new_value) -> None:
         self.data_values[idx] = new_value
         if ~self.enable_inv_value and self.select == idx:
-            if self.powered:
-                self.output.set_output_level(new_value)
+            self.output_value = new_value
+            self._output_changes()
 
     @input
     @QtCore.Slot(TTL)
@@ -69,8 +75,8 @@ class Multiplexer:
             self.select&SELECT_BIT_MASK[~select_bit]
         )
         if ~self.enable_inv_value:
-            if self.powered:
-                self.output.set_output_level(self.data_values[self.select])
+            self.output_value = self.data_values[self.select]
+            self._output_changes()
 
     @input
     @QtCore.Slot(TTL)
@@ -80,8 +86,11 @@ class Multiplexer:
         if self.data_values[self.select] == TTL.H:
             # Enabling data out?
             if new_value == TTL.L:
-                if self.powered:
-                    self.output.set_output_level(self.data_values[self.select])
+                self.output_value = self.data_values[self.select]
             else:
-                if self.powered:
-                    self.output.set_output_level(TTL.L)
+                self.output_value = TTL.L
+            self._output_changes()
+
+    def _output_changes(self) -> None:
+        if self.powered:
+            self.output.set_output_level(self.output_value)
