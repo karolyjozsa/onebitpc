@@ -1,13 +1,18 @@
-"""CPU section on the board
+"""CPU sections on the board
 
-- A 1-bit register containing memory (FlipFlop) and an LED
-- A 1-bit program counter (FlipFlop) and an LED
-- An XOR calculation section
+The sections inside the CPU usually are
+- CPU internal memory/register (implemented by a FlipFlop)
+- CPU program counter store (implemented by a FlipFlop)
+- Arithmetic Logic Unit to calculate register value (implemented by a
+  Multiplexer)
+- Program counter calcultator (implemented by a Multiplexer)
+- An XOR calculation section to implement an XOR gate
 """
 
 from PySide6 import QtCore
 
-from boardsections.hardware.psu import Ground
+from boardsections.hardware.psu import GROUND, VCC
+from boardsections.hardware.u2_7474 import FlipFlop
 from boardsections.hardware.u3_7400 import Nand
 from boardsections.hardware.u4_74153 import Multiplexer
 from boardsections.hardware.wiring import Wire
@@ -15,24 +20,40 @@ from tools.wiring_checker import hw_elem, input
 from typedefinitions import TTL
 
 
+class Register(FlipFlop):
+    """CPU internal memory/register"""
+    def __init__(self) -> None:
+        super().__init__("register")
+        VCC.solder_to(self.preset_inv)
+        VCC.solder_to(self.clear_inv)
+
+
+class PrgCnt(FlipFlop):
+    """CPU program counter store"""
+    def __init__(self) -> None:
+        super().__init__("prog_cnt")
+        VCC.solder_to(self.preset_inv)
+        VCC.solder_to(self.clear_inv)
+
+
 class Alu:
-    """The Arithmetic Logic Unit in the CPU"""
+    """The Arithmetic Logic Unit"""
     def __init__(self) -> None:
         self.mux = Multiplexer("alu")
-        Ground().solder_to(self.mux.data2)
-        Ground().solder_to(self.mux.data3)
-        Ground().solder_to(self.mux.enable_inv)
-        Ground().solder_to(self.mux.select1)
+        GROUND.solder_to(self.mux.data2)
+        GROUND.solder_to(self.mux.data3)
+        GROUND.solder_to(self.mux.enable_inv)
+        GROUND.solder_to(self.mux.select1)
 
 
-class AddrPtr:
-    """The CPU program code address pointer"""
+class PrgCntCalc:
+    """The program code address pointer calculator"""
     def __init__(self) -> None:
-        self.mux = Multiplexer("addrptr")
-        Ground().solder_to(self.mux.data2)
-        Ground().solder_to(self.mux.data3)
-        Ground().solder_to(self.mux.enable_inv)
-        Ground().solder_to(self.mux.select1)
+        self.mux = Multiplexer("prog_cnt_calc")
+        GROUND.solder_to(self.mux.data2)
+        GROUND.solder_to(self.mux.data3)
+        GROUND.solder_to(self.mux.enable_inv)
+        GROUND.solder_to(self.mux.select1)
 
 
 @hw_elem

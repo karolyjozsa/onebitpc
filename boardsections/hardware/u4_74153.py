@@ -2,7 +2,7 @@
 
 from PySide6 import QtCore
 
-from boardsections.hardware.psu import Vcc
+from boardsections.hardware.psu import VCC
 from boardsections.hardware.wiring import Wire
 from tools.wiring_checker import hw_elem, input
 from typedefinitions import TTL
@@ -13,9 +13,10 @@ SELECT_BIT_MASK = [0b01, 0b10]
 
 @hw_elem
 class Multiplexer:
+    powered: bool
+
     def __init__(self, name: str) -> None:
-        self.powered = False
-        Vcc().solder_to(self.vcc)
+        VCC.solder_to(self.vcc)
         self.data_values: list[TTL] = [TTL.L for _ in range(4)]
         self.enable_inv_value: TTL = TTL.L
         self.select: int = 0*SELECT_BIT_MASK[0] + 0*SELECT_BIT_MASK[1]

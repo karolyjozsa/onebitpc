@@ -19,42 +19,38 @@ Create and connect the board sections, i.e. HW elements or logical blocks:
 import asyncio
 
 from boardsections.clock import AstableMultivibrator
-from boardsections.cpu import Alu, AddrPtr, Xor
+from boardsections.cpu import Alu, PrgCnt, PrgCntCalc, Register, Xor
+from boardsections.hardware.psu import VCC
 from boardsections.hardware.dipswitches import DipSwitch
 from boardsections.hardware.leds import Led
-from boardsections.hardware.u2_7474 import FlipFlop
-from boardsections.hardware.psu import Vcc
 from boardsections.rom import Rom
 from tools import wiring_checker
-from typedefinitions import TTL
 
 
 ####################################
 ## Create simulated elements
 ####################################
 
-# Reset button
+# Power switch and Reset button
 # ??????
 
 # LEDs
+power_led = Led('Pwr', 'white')
+VCC.solder_to(power_led.anode)
 register_led = Led('Reg', 'red')
 pc_led = Led('PC', 'yellow')
 clock_led = Led('Clock', 'blue')
 
-# Complex sections
-clock = AstableMultivibrator()
-rom = Rom()
-register = FlipFlop("register")
-Vcc().solder_to(register.preset_inv)
-Vcc().solder_to(register.clear_inv)
-prog_cnt = FlipFlop("prog_cnt")
-Vcc().solder_to(prog_cnt.preset_inv)
-Vcc().solder_to(prog_cnt.clear_inv)
-
-# Create calculating sections
+# CPU sections
+register = Register()
+prog_cnt = PrgCnt()
 xor = Xor()
 alu = Alu()
-addr_ptr = AddrPtr()
+prog_cnt_calc = PrgCntCalc()
+
+# Other computer HW sections
+clock = AstableMultivibrator()
+rom = Rom()
 
 ####################################
 ## Solder outputs to other elements
@@ -72,14 +68,14 @@ register.output_q.solder_to(register_led.anode)
 
 # Program Counter to ROM, Addres Pointer and LED
 prog_cnt.output_q.solder_to(rom.address)
-prog_cnt.output_q_inv.solder_to(addr_ptr.mux.data0)
+prog_cnt.output_q_inv.solder_to(prog_cnt_calc.mux.data0)
 prog_cnt.output_q.solder_to(pc_led.anode)
 
 # ROM to arithmetic and addressing sections
 rom.output_data.solder_to(xor.input2)
-rom.output_data.solder_to(addr_ptr.mux.data1)
+rom.output_data.solder_to(prog_cnt_calc.mux.data1)
 rom.output_address.solder_to(alu.mux.select0)
-rom.output_address.solder_to(addr_ptr.mux.select0)
+rom.output_address.solder_to(prog_cnt_calc.mux.select0)
 
 # XOR to ALU
 xor.output.solder_to(alu.mux.data0)
@@ -88,7 +84,7 @@ xor.output.solder_to(alu.mux.data0)
 alu.mux.output.solder_to(register.data)
 
 # Addres Pointer to ProgCounter
-addr_ptr.mux.output.solder_to(prog_cnt.data)
+prog_cnt_calc.mux.output.solder_to(prog_cnt.data)
 
 
 ####################################
