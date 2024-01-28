@@ -22,7 +22,7 @@ class FlipFlop:
         PSU.vcc.solder_to(self.vcc)
         self.name = name
         self.data_value: TTL = TTL.L
-        self.state_bits: int = 0  # actually undefined, but PRE/CLR=High is coming
+        self.state_bits: int = 3  # actually undefined, but PRE/CLR=High is coming
         self.output_q = Wire(f"{name}_q")
         self.output_q_inv = Wire(f"{name}_q_inv")
 

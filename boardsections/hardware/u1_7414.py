@@ -7,7 +7,7 @@ from PySide6 import QtCore
 from boardsections.hardware.psu import PSU
 from boardsections.hardware.wiring import Wire
 from tools.wiring_checker import hw_elem, input
-from typedefinitions import TTL
+from typedefinitions import TTL, Voltage
 
 
 THRESHOLD_HIGH = 4.2
@@ -33,7 +33,7 @@ class SchmidtTrigger:
     
     @input
     @QtCore.Slot(TTL)
-    def input(self, new_value: float | TTL) -> None:
+    def input(self, new_value: Voltage | TTL) -> None:
         if isinstance(new_value, TTL):
             self.output_value = new_value
             self._output_changes()
